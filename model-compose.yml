@@ -1,0 +1,43 @@
+controller:
+  adapter:
+    type: http-server
+    port: ${env.PORT | 8080}
+    base_path: /api
+  webui:
+    driver: gradio
+    port: ${env.SERVER_PORT | 8081}
+
+workflows:
+  - id: generate
+    title: Qwen-Image 2.1 generate
+    description: Text-to-image, or image-conditioned generation and editing when an image is given.
+    job:
+      input: ${input}
+      output: ${output as image/png}
+
+component:
+  type: model
+  task: image-generation
+  driver: huggingface
+  architecture: qwen-image
+  device: ${env.DEVICE | auto}
+  model:
+    provider: huggingface
+    repository: Qwen/Qwen-Image-2.1
+    token: ${env.HF_TOKEN | }
+  cpu_offload: model
+  max_concurrent_count: 1
+  runtime:
+    type: virtualenv
+    driver: python
+    path: .venv/qwen-image
+  action:
+    prompt: ${input.prompt as text}
+    negative_prompt: ${input.negative_prompt as text}
+    image: ${input.image as image}
+    width: ${input.width as integer | 1024}
+    height: ${input.height as integer | 1024}
+    seed: ${input.seed as integer}
+    params:
+      inference_steps: ${input.inference_steps as integer | 40}
+      true_cfg_scale: ${input.true_cfg_scale as number | 1.0}
